@@ -1,0 +1,27 @@
+{
+  "name": "big-boss-command-center",
+  "version": "1.0.0",
+  "description": "Big Boss House Command Center - Full Stack Reality Show Control System",
+  "main": "server/server.js",
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"magenta,cyan\" \"npm run server\" \"npm run client\"",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "build": "npm run build --prefix client",
+    "start": "node server/server.js",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client"
+  },
+  "keywords": [
+    "big-boss",
+    "command-center",
+    "reality-show",
+    "leaderboard",
+    "dashboard"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

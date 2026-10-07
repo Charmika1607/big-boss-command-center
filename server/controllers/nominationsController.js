@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { readDB, writeDB } from '../database/db.js';
+import { logActivity, createNotification } from '../services/realtime.js';
 
 // GET /api/nominations
 export const getNominations = (req, res) => {
@@ -65,6 +66,36 @@ export const createNomination = (req, res) => {
 
     writeDB(db);
 
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'NOMINATION_CREATED',
+      description: `Placed ${contestant.name} in Danger Zone ("${nominationReason}")`,
+      target: contestant.name,
+      targetId: contestant.id
+    });
+
+    // Notify nominee directly
+    createNotification(db, {
+      recipient: contestant.id,
+      title: 'Danger Zone Alert: You Are Nominated',
+      message: `You have been nominated for eviction. Reason: "${nominationReason}". Secure audience votes immediately!`,
+      type: 'nomination',
+      relatedEntity: { type: 'dangerzone', id: contestant.id }
+    });
+
+    // Notify all housemates
+    createNotification(db, {
+      recipient: 'all',
+      title: 'Nomination Alert',
+      message: `⚠ DANGER ZONE: ${contestant.name} has been nominated for eviction!`,
+      type: 'nomination',
+      relatedEntity: { type: 'dangerzone', id: contestant.id }
+    });
+
     res.status(201).json({
       success: true,
       message: `${contestant.name} has been placed in the Danger Zone.`,
@@ -101,6 +132,26 @@ export const removeNomination = (req, res) => {
     });
 
     writeDB(db);
+
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'NOMINATION_REVOKED',
+      description: `Revoked Danger Zone nomination for ${contestant.name}`,
+      target: contestant.name,
+      targetId: contestant.id
+    });
+
+    createNotification(db, {
+      recipient: contestant.id,
+      title: 'Danger Zone Cleared',
+      message: `Your nomination has been revoked. You are safe from the current eviction cycle.`,
+      type: 'nomination',
+      relatedEntity: { type: 'dangerzone', id: contestant.id }
+    });
 
     res.json({
       success: true,

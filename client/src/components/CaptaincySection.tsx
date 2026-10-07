@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export const CaptaincySection: React.FC = () => {
-  const { currentCaptain, removeCaptain, openModal } = useCommandCenter();
+  const { currentCaptain, removeCaptain, openModal, currentUser } = useCommandCenter();
 
   return (
     <div className="w-full space-y-6">
@@ -37,111 +37,98 @@ export const CaptaincySection: React.FC = () => {
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => openModal('captain')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold font-orbitron uppercase bg-amber-500 hover:bg-amber-600 text-black shadow-lg shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
-            >
-              <Crown className="w-4 h-4 fill-black" />
-              {currentCaptain ? 'Change Captain' : 'Appoint Captain'}
-            </button>
-
-            {currentCaptain && (
+          {/* Action buttons (Admin only) */}
+          {currentUser.role === 'admin' && (
+            <div className="flex items-center gap-2.5">
               <button
-                onClick={() => removeCaptain()}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold font-orbitron uppercase bg-zinc-200 dark:bg-zinc-800 hover:bg-red-500/20 hover:text-red-500 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 transition-colors"
-                title="Relieve current captain of command"
+                onClick={() => openModal('captain')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold font-orbitron uppercase bg-amber-500 hover:bg-amber-600 text-black shadow-lg shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
               >
-                <UserMinus className="w-4 h-4" />
-                Vacate
+                <Crown className="w-4 h-4 fill-black" />
+                {currentCaptain ? 'Change Captain' : 'Appoint Captain'}
               </button>
-            )}
-          </div>
+
+              {currentCaptain && (
+                <button
+                  onClick={() => removeCaptain()}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold font-orbitron uppercase bg-zinc-200 dark:bg-zinc-800 hover:bg-red-500/20 hover:text-red-500 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 transition-colors"
+                  title="Relieve current captain of command"
+                >
+                  <UserMinus className="w-4 h-4" />
+                  Vacate
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Current Captain Profile */}
+        {/* Current Captain Spotlight */}
         {currentCaptain ? (
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 items-center pt-4 border-t border-amber-500/20">
-            {/* Avatar & Badges */}
-            <div className="flex flex-col sm:flex-row items-center gap-5 lg:col-span-2">
+          <div className="relative z-10 bg-white/60 dark:bg-zinc-900/80 border border-amber-500/30 rounded-3xl p-6 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
               <div className="relative">
                 <img
                   src={currentCaptain.avatar}
                   alt={currentCaptain.name}
-                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover ring-4 ring-amber-400 shadow-2xl"
+                  className="w-24 h-24 rounded-3xl object-cover ring-4 ring-amber-500 shadow-xl"
                 />
-                <div className="absolute -top-3 -right-2 p-2 rounded-2xl bg-amber-500 text-black shadow-lg animate-bounce">
-                  <Crown className="w-5 h-5 fill-black" />
+                <div className="absolute -top-2 -right-2 p-1.5 rounded-full bg-amber-500 text-black shadow-md">
+                  <Crown className="w-4 h-4 fill-black" />
                 </div>
               </div>
 
-              <div className="text-center sm:text-left space-y-2">
+              <div className="space-y-1">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <span className="text-[10px] font-black uppercase font-orbitron px-2.5 py-0.5 rounded-full bg-amber-500 text-black">
-                    SUPREME CAPTAIN
+                    REIGNING CAPTAIN
                   </span>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
-                    {currentCaptain.team} Team
+                  <span className="text-xs font-bold text-zinc-400">
+                    Team {currentCaptain.team}
                   </span>
                 </div>
 
-                <h3 className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
+                <h3 className="text-2xl font-black font-orbitron text-zinc-900 dark:text-white mt-1">
                   {currentCaptain.name}
                 </h3>
 
-                <p className="text-xs text-zinc-500 dark:text-zinc-300 max-w-md leading-relaxed">
-                  {currentCaptain.bio || 'House leader overseeing duties, rations, and discipline.'}
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md leading-relaxed">
+                  {currentCaptain.bio || 'House leader commanding respect and enforcing task compliance.'}
                 </p>
 
-                <div className="flex items-center justify-center sm:justify-start gap-4 pt-1 font-orbitron text-xs">
-                  <span className="text-amber-500 font-bold">
-                    Score: {currentCaptain.points} pts
+                <div className="flex items-center justify-center sm:justify-start gap-4 pt-2 text-xs">
+                  <span className="flex items-center gap-1.5 text-emerald-500 font-bold">
+                    <ShieldCheck className="w-4 h-4" /> Captaincy Immunity Protected
                   </span>
-                  <span className="text-emerald-500 font-bold flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Direct Captaincy Immunity
+                  <span className="text-amber-500 font-black font-orbitron">
+                    {currentCaptain.points} Points Standing
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Captain Privileges Panel */}
-            <div className="rounded-2xl bg-black/40 border border-amber-500/30 p-4 space-y-2.5 text-xs">
-              <div className="font-bold text-[11px] uppercase tracking-wider font-orbitron text-amber-400 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-400" />
+            {/* Privileges Box */}
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2 max-w-xs w-full">
+              <div className="font-orbitron font-bold text-amber-700 dark:text-amber-300 uppercase text-[11px] flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
                 CONSTITUTIONAL PRIVILEGES
               </div>
-              <ul className="space-y-2 text-zinc-300 text-[11px]">
-                <li className="flex items-center gap-2">
-                  <span className="text-amber-400">✓</span> Immunity from public nomination
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-amber-400">✓</span> Exclusive access to Captain's Suite
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-amber-400">✓</span> Authority to allocate kitchen & chore duties
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-amber-400">✓</span> Tie-breaker vote in House Council disputes
-                </li>
+              <ul className="space-y-1 text-zinc-600 dark:text-zinc-300 text-[11px] list-disc list-inside">
+                <li>Exclusive Private Captain's Quarters</li>
+                <li>Absolute immunity from Danger Zone</li>
+                <li>Power to allocate luxury rations</li>
+                <li>Weekly leadership bonus of +15 points</li>
               </ul>
             </div>
           </div>
         ) : (
-          <div className="relative z-10 py-12 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800 text-zinc-400 flex flex-col items-center justify-center">
-            <AlertCircle className="w-12 h-12 text-amber-500 mb-3 opacity-80" />
-            <h3 className="font-orbitron font-bold text-base text-zinc-200">
+          <div className="relative z-10 py-16 text-center text-zinc-400 flex flex-col items-center justify-center">
+            <Crown className="w-12 h-12 mb-3 opacity-30 text-amber-500" />
+            <h3 className="font-orbitron font-bold text-sm text-zinc-700 dark:text-zinc-300">
               CAPTAINCY IS CURRENTLY VACANT
             </h3>
-            <p className="text-xs text-zinc-400 mt-1 max-w-sm mb-4">
-              No contestant is currently assigned House Captain. Big Boss may decree a new leader at any time.
+            <p className="text-xs text-zinc-500 mt-1 max-w-sm">
+              No housemate is currently appointed as Captain. Executive Big Boss action is required to commission the next captaincy task.
             </p>
-            <button
-              onClick={() => openModal('captain')}
-              className="px-4 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-amber-500 hover:bg-amber-600 text-black transition-all shadow-md"
-            >
-              Assign House Captain Now
-            </button>
           </div>
         )}
       </div>

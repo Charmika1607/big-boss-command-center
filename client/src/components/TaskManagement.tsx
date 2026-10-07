@@ -15,7 +15,7 @@ import {
 import { TaskStatus } from '../types';
 
 export const TaskManagement: React.FC = () => {
-  const { tasks, updateTaskStatus, deleteTask, openModal } = useCommandCenter();
+  const { tasks, updateTaskStatus, deleteTask, openModal, currentUser } = useCommandCenter();
   const [filter, setFilter] = useState<string>('All');
 
   const filteredTasks = tasks.filter((t) => {
@@ -66,13 +66,15 @@ export const TaskManagement: React.FC = () => {
               <option value="Completed">Completed</option>
             </select>
 
-            <button
-              onClick={() => openModal('create-task')}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition-all hover:scale-[1.02] shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              + New Task
-            </button>
+            {currentUser.role === 'admin' && (
+              <button
+                onClick={() => openModal('create-task')}
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition-all hover:scale-[1.02] shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                + New Task
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -81,6 +83,11 @@ export const TaskManagement: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredTasks.map((task) => {
           const isCompleted = task.status === 'Completed';
+          const isAssignedToCurrentUser =
+            currentUser.role === 'contestant' &&
+            Boolean(currentUser.contestantId && (task.assignedContestantIds || []).includes(currentUser.contestantId));
+
+          const canControlTask = currentUser.role === 'admin' || isAssignedToCurrentUser;
 
           return (
             <div
@@ -91,18 +98,25 @@ export const TaskManagement: React.FC = () => {
                   : task.status === 'In Progress'
                   ? 'bg-blue-500/5 dark:bg-blue-950/20 border-blue-500/40 shadow-sm'
                   : 'bg-white/80 dark:bg-zinc-900/70 border-zinc-200 dark:border-zinc-800/80 shadow-sm'
-              }`}
+              } ${isAssignedToCurrentUser ? 'ring-2 ring-blue-500/40 shadow-md' : ''}`}
             >
               <div>
                 {/* Status + Reward */}
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <span
-                    className={`text-[10px] font-black uppercase font-orbitron px-2.5 py-1 rounded-lg border ${getStatusBadge(
-                      task.status
-                    )}`}
-                  >
-                    {task.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-[10px] font-black uppercase font-orbitron px-2.5 py-1 rounded-lg border ${getStatusBadge(
+                        task.status
+                      )}`}
+                    >
+                      {task.status}
+                    </span>
+                    {isAssignedToCurrentUser && (
+                      <span className="text-[9px] font-bold uppercase font-orbitron px-2 py-0.5 rounded-full bg-blue-500 text-white">
+                        ASSIGNED TO YOU
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-black font-orbitron">
                     <Trophy className="w-3.5 h-3.5" />
@@ -130,15 +144,19 @@ export const TaskManagement: React.FC = () => {
                       {task.assignedContestants.map((assignee) => (
                         <div
                           key={assignee.id}
-                          className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700"
+                          className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border ${
+                            currentUser.role === 'contestant' && currentUser.contestantId === assignee.id
+                              ? 'bg-blue-600 text-white border-blue-400 font-bold'
+                              : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200'
+                          }`}
                         >
                           <img
                             src={assignee.avatar}
                             alt={assignee.name}
                             className="w-5 h-5 rounded-full object-cover"
                           />
-                          <span className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200">
-                            {assignee.name}
+                          <span className="text-[11px] font-semibold">
+                            {assignee.name} {currentUser.role === 'contestant' && currentUser.contestantId === assignee.id ? '(You)' : ''}
                           </span>
                         </div>
                       ))}
@@ -166,7 +184,7 @@ export const TaskManagement: React.FC = () => {
 
               {/* Status transition controls */}
               <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800/80 flex items-center gap-2">
-                {task.status === 'Pending' && (
+                {canControlTask && task.status === 'Pending' && (
                   <button
                     onClick={() => updateTaskStatus(task.id, 'In Progress')}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold font-orbitron uppercase bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md shadow-blue-600/20"
@@ -176,7 +194,7 @@ export const TaskManagement: React.FC = () => {
                   </button>
                 )}
 
-                {task.status === 'In Progress' && (
+                {canControlTask && task.status === 'In Progress' && (
                   <button
                     onClick={() => updateTaskStatus(task.id, 'Completed')}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold font-orbitron uppercase bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-md shadow-emerald-600/20"
@@ -186,19 +204,27 @@ export const TaskManagement: React.FC = () => {
                   </button>
                 )}
 
-                {isCompleted && (
-                  <div className="flex-1 text-center py-2 px-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-orbitron font-bold text-xs border border-emerald-500/20">
-                    ✓ Task Completed & Points Awarded
+                {!canControlTask && !isCompleted && (
+                  <div className="flex-1 text-center py-2 px-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 font-orbitron font-semibold text-xs border border-zinc-200 dark:border-zinc-700">
+                    {task.status === 'In Progress' ? 'Challenge Underway' : 'Challenge Pending'}
                   </div>
                 )}
 
-                <button
-                  onClick={() => deleteTask(task.id)}
-                  className="p-2 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                  title="Purge Task"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {isCompleted && (
+                  <div className="flex-1 text-center py-2 px-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-orbitron font-bold text-xs border border-emerald-500/20">
+                    ✓ Challenge Completed & Awarded
+                  </div>
+                )}
+
+                {currentUser.role === 'admin' && (
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    className="p-2 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                    title="Purge Task"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           );

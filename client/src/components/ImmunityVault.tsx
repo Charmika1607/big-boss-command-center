@@ -12,10 +12,9 @@ import {
 } from 'lucide-react';
 
 export const ImmunityVault: React.FC = () => {
-  const { activeContestants, removeImmunity, openModal } = useCommandCenter();
+  const { activeContestants, removeImmunity, openModal, currentUser } = useCommandCenter();
 
   const immuneContestants = activeContestants.filter((c) => c.isImmune);
-  const unshieldedContestants = activeContestants.filter((c) => !c.isImmune && !c.isCaptain);
 
   return (
     <div className="w-full space-y-6">
@@ -36,13 +35,15 @@ export const ImmunityVault: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={() => openModal('immunity')}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-teal-600 hover:bg-teal-700 text-white shadow-md shadow-teal-600/20 transition-all hover:scale-[1.02] shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            Grant Immunity Shield
-          </button>
+          {currentUser.role === 'admin' && (
+            <button
+              onClick={() => openModal('immunity')}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-teal-600 hover:bg-teal-700 text-white shadow-md shadow-teal-600/20 transition-all hover:scale-[1.02] shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              Grant Immunity Shield
+            </button>
+          )}
         </div>
       </div>
 
@@ -115,18 +116,24 @@ export const ImmunityVault: React.FC = () => {
                   </div>
 
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-                    {c.bio || 'Shield secured through task accomplishment.'}
+                    {c.bio || 'Shield secured through challenge accomplishment.'}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-teal-500/20">
-                  <button
-                    onClick={() => removeImmunity(c.id)}
-                    className="w-full py-2 px-3 rounded-xl text-xs font-bold font-orbitron uppercase bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-500/30 transition-colors"
-                  >
-                    Strip Immunity Shield
-                  </button>
-                </div>
+                {currentUser.role === 'admin' ? (
+                  <div className="pt-3 border-t border-teal-500/20">
+                    <button
+                      onClick={() => removeImmunity(c.id)}
+                      className="w-full py-2 px-3 rounded-xl text-xs font-bold font-orbitron uppercase bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-500/30 transition-colors"
+                    >
+                      Strip Immunity Shield
+                    </button>
+                  </div>
+                ) : (
+                  <div className="pt-2 text-center text-[10px] text-teal-600 dark:text-teal-400 font-orbitron">
+                    IMMUNITY ACTIVE • DANGER PROTECTED
+                  </div>
+                )}
               </div>
             ))}
           </div>

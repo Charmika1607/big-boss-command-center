@@ -1,11 +1,70 @@
-import { Contestant, Task, Announcement, HouseStats, PointLog, EvictionRecord } from '../types';
+import {
+  Contestant,
+  Task,
+  Announcement,
+  HouseStats,
+  PointLog,
+  EvictionRecord,
+  User,
+  UserRole,
+  ActivityLog,
+  HouseNotification,
+  OverviewAnalytics,
+  ContestantAnalytics
+} from '../types';
 
 const API_BASE = '/api';
 
+// Current active auth session in client
+interface SessionState {
+  role: UserRole;
+  userId: string;
+  contestantId?: string;
+  token?: string;
+}
+
+let activeSession: SessionState = {
+  role: 'admin',
+  userId: 'u-admin',
+  contestantId: undefined,
+  token: undefined
+};
+
+// Initialize from localStorage if exists
+try {
+  const saved = localStorage.getItem('bb_session');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (parsed.role) activeSession = parsed;
+  }
+} catch {
+  // Ignore localStorage failure
+}
+
+export const setApiAuthSession = (session: Partial<SessionState>) => {
+  activeSession = {
+    ...activeSession,
+    ...session
+  };
+  try {
+    localStorage.setItem('bb_session', JSON.stringify(activeSession));
+  } catch {
+    // Ignore
+  }
+};
+
+export const getApiAuthSession = (): SessionState => activeSession;
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers || {})
+    'x-user-role': activeSession.role,
+    ...(activeSession.userId ? { 'x-user-id': activeSession.userId } : {}),
+    ...(activeSession.contestantId ? { 'x-contestant-id': activeSession.contestantId } : {}),
+    ...(activeSession.token
+      ? { 'Authorization': `Bearer ${activeSession.token}` }
+      : { 'Authorization': `Bearer ${activeSession.role}` }),
+    ...((options.headers as Record<string, string>) || {})
   };
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -27,7 +86,16 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
-  // Contestants
+  // ---------------- Authentication & Roles ----------------
+  getCurrentUser: () => request<User>('/auth/current'),
+  getUsers: () => request<User[]>('/auth/users'),
+  switchRole: (role: UserRole, contestantId?: string) =>
+    request<{ user: User; token: string }>('/auth/switch-role', {
+      method: 'POST',
+      body: JSON.stringify({ role, contestantId })
+    }),
+
+  // ---------------- Contestants ----------------
   getContestants: () => request<Contestant[]>('/contestants'),
   createContestant: (data: Partial<Contestant>) =>
     request<Contestant>('/contestants', {
@@ -62,7 +130,7 @@ export const api = {
       method: 'DELETE'
     }),
 
-  // Tasks
+  // ---------------- Tasks ----------------
   getTasks: () => request<Task[]>('/tasks'),
   createTask: (data: Partial<Task>) =>
     request<Task>('/tasks', {
@@ -79,7 +147,7 @@ export const api = {
       method: 'DELETE'
     }),
 
-  // Captaincy
+  // ---------------- Captaincy ----------------
   getCaptain: () => request<Contestant | null>('/captain'),
   setCaptain: (contestantId: string | null, action: 'assign' | 'remove' = 'assign') =>
     request<Contestant | null>('/captain', {
@@ -87,7 +155,7 @@ export const api = {
       body: JSON.stringify({ contestantId, action })
     }),
 
-  // Nominations
+  // ---------------- Nominations ----------------
   getNominations: () => request<Contestant[]>('/nominations'),
   createNomination: (contestantId: string, reason: string) =>
     request<Contestant>('/nominations', {
@@ -99,7 +167,7 @@ export const api = {
       method: 'DELETE'
     }),
 
-  // Announcements
+  // ---------------- Announcements ----------------
   getAnnouncements: () => request<Announcement[]>('/announcements'),
   createAnnouncement: (message: string, type: string = 'general', pinned: boolean = false) =>
     request<Announcement>('/announcements', {
@@ -111,7 +179,40 @@ export const api = {
       method: 'DELETE'
     }),
 
-  // Statistics & Logs
+  // ---------------- Real-Time Activity Log ----------------
+  getActivities: (params?: { search?: string; role?: string; action?: string; limit?: number; page?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.role) query.set('role', params.role);
+    if (params?.action) query.set('action', params.action);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.page) query.set('page', String(params.page));
+    const qs = query.toString();
+    return request<ActivityLog[]>(`/activity${qs ? `?${qs}` : ''}`);
+  },
+
+  // ---------------- Event Notifications ----------------
+  getNotifications: () => request<HouseNotification[]>('/notifications'),
+  markNotificationRead: (id: string) =>
+    request<HouseNotification>(`/notifications/${id}/read`, {
+      method: 'PATCH'
+    }),
+  markAllNotificationsRead: () =>
+    request<{ success: boolean; message: string }>('/notifications/read-all', {
+      method: 'PATCH'
+    }),
+  deleteNotification: (id: string) =>
+    request<HouseNotification>(`/notifications/${id}`, {
+      method: 'DELETE'
+    }),
+
+  // ---------------- Performance Analytics ----------------
+  getAnalyticsOverview: () => request<OverviewAnalytics>('/analytics/overview'),
+  getContestantAnalytics: (id: string) => request<ContestantAnalytics>(`/analytics/contestants/${id}`),
+  getPointsAnalytics: () => request<any>('/analytics/points'),
+  getTasksAnalytics: () => request<any>('/analytics/tasks'),
+
+  // ---------------- Statistics & Logs ----------------
   getStatistics: () => request<HouseStats>('/statistics'),
   getPointLogs: () => request<PointLog[]>('/point-logs'),
   getEvictions: () => request<EvictionRecord[]>('/evictions'),

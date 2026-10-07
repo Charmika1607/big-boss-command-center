@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { readDB, writeDB } from '../database/db.js';
+import { logActivity, createNotification } from '../services/realtime.js';
 
 // POST /api/contestants/:id/immunity
 export const grantImmunity = (req, res) => {
@@ -42,6 +43,34 @@ export const grantImmunity = (req, res) => {
 
     writeDB(db);
 
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'IMMUNITY_GRANTED',
+      description: `Granted Immunity Shield to ${contestant.name}`,
+      target: contestant.name,
+      targetId: contestant.id
+    });
+
+    createNotification(db, {
+      recipient: contestant.id,
+      title: 'Immunity Shield Activated',
+      message: `You are shielded from nominations and the Danger Zone!`,
+      type: 'immunity',
+      relatedEntity: { type: 'immunity', id: contestant.id }
+    });
+
+    createNotification(db, {
+      recipient: 'all',
+      title: 'Immunity Shield Bestowed',
+      message: `🛡 ${contestant.name} has been granted Immunity protection by Big Boss!`,
+      type: 'immunity',
+      relatedEntity: { type: 'immunity', id: contestant.id }
+    });
+
     res.json({
       success: true,
       message: `Immunity granted to ${contestant.name}.`,
@@ -77,6 +106,26 @@ export const removeImmunity = (req, res) => {
     });
 
     writeDB(db);
+
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'IMMUNITY_REVOKED',
+      description: `Immunity Shield revoked for ${contestant.name}`,
+      target: contestant.name,
+      targetId: contestant.id
+    });
+
+    createNotification(db, {
+      recipient: contestant.id,
+      title: 'Immunity Shield Revoked',
+      message: `Your Immunity protection has expired or been revoked. You are now eligible for nomination.`,
+      type: 'immunity',
+      relatedEntity: { type: 'immunity', id: contestant.id }
+    });
 
     res.json({
       success: true,

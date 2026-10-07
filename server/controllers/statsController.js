@@ -1,4 +1,5 @@
 import { readDB, resetDB } from '../database/db.js';
+import { logActivity, createNotification } from '../services/realtime.js';
 
 // GET /api/statistics
 export const getStatistics = (req, res) => {
@@ -83,6 +84,24 @@ export const getEvictions = (req, res) => {
 export const resetDatabase = (req, res) => {
   try {
     const freshData = resetDB();
+
+    logActivity(freshData, {
+      actor: req.user?.name || 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'DATABASE_RESET',
+      description: 'System reseeded to official factory state',
+      target: 'System Database',
+      targetId: 'db-root'
+    });
+
+    createNotification(freshData, {
+      recipient: 'all',
+      title: 'Database Reseeded',
+      message: 'System reinitialized to official Big Boss baseline.',
+      type: 'system',
+      relatedEntity: { type: 'system', id: 'reset' }
+    });
+
     res.json({
       success: true,
       message: 'Big Boss Command Center database reset to official factory seed.',

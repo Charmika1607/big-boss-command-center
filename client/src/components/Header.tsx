@@ -11,8 +11,14 @@ import {
   Radio,
   Eye,
   Megaphone,
-  Menu
+  Menu,
+  Bell,
+  UserCheck,
+  ShieldAlert,
+  ChevronDown
 } from 'lucide-react';
+import { NotificationCenter } from './NotificationCenter';
+import { RoleSwitcherModal } from './RoleSwitcherModal';
 
 interface HeaderProps {
   onToggleMobileNav?: () => void;
@@ -25,12 +31,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
     isMuted,
     toggleMute,
     resetToFactorySeed,
-    openModal
+    openModal,
+    currentUser,
+    unreadNotificationsCount,
+    notificationPanelOpen,
+    setNotificationPanelOpen
   } = useCommandCenter();
 
   const { theme, toggleTheme } = useTheme();
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
+  const [roleModalOpen, setRoleModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -57,6 +68,32 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
     return () => clearInterval(interval);
   }, []);
 
+  const getRoleHeaderStyle = () => {
+    switch (currentUser.role) {
+      case 'admin':
+        return {
+          badge: 'bg-red-600/15 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-600/20',
+          icon: Crown,
+          title: 'BIG BOSS (ADMIN)'
+        };
+      case 'contestant':
+        return {
+          badge: 'bg-blue-600/15 border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-600/20',
+          icon: UserCheck,
+          title: currentUser.name.toUpperCase()
+        };
+      case 'viewer':
+        return {
+          badge: 'bg-purple-600/15 border-purple-500/40 text-purple-600 dark:text-purple-400 hover:bg-purple-600/20',
+          icon: Eye,
+          title: 'PUBLIC VIEWER'
+        };
+    }
+  };
+
+  const roleConfig = getRoleHeaderStyle();
+  const RoleIcon = roleConfig.icon;
+
   return (
     <header className="sticky top-0 z-40 w-full border-b backdrop-blur-xl transition-colors duration-200 bg-white/80 dark:bg-zinc-950/85 border-zinc-200 dark:border-zinc-800/80 shadow-md">
       {/* Top emergency announcement bar if pinned/available */}
@@ -71,12 +108,14 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
               "{latestAnnouncement.message}"
             </div>
           </div>
-          <button
-            onClick={() => openModal('announcement')}
-            className="text-[10px] uppercase font-bold tracking-wider hover:underline ml-3 shrink-0 opacity-90 hover:opacity-100"
-          >
-            Broadcast +
-          </button>
+          {currentUser.role === 'admin' && (
+            <button
+              onClick={() => openModal('announcement')}
+              className="text-[10px] uppercase font-bold tracking-wider hover:underline ml-3 shrink-0 opacity-90 hover:opacity-100"
+            >
+              Broadcast +
+            </button>
+          )}
         </div>
       )}
 
@@ -143,10 +182,39 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
           )}
         </div>
 
-        {/* Right: Controls & Digital Clock */}
+        {/* Right: Controls, Role Switcher, Notification Bell & Digital Clock */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Role Indicator & Switcher Button */}
+          <button
+            onClick={() => setRoleModalOpen(true)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-orbitron text-xs font-bold transition-all shadow-xs cursor-pointer ${roleConfig.badge}`}
+            title="Click to switch active role / vantage point"
+          >
+            <RoleIcon className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline tracking-wider">{roleConfig.title}</span>
+            <span className="sm:hidden tracking-wider">{currentUser.role.toUpperCase()}</span>
+            <ChevronDown className="w-3 h-3 opacity-70" />
+          </button>
+
+          {/* Event Notifications Bell */}
+          <div className="relative">
+            <button
+              onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
+              className="relative p-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-xs"
+              title="Transmissions & Notifications"
+              aria-label="View Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 px-1 items-center justify-center rounded-full bg-red-600 text-white text-[9px] font-black font-orbitron ring-2 ring-white dark:ring-zinc-950 animate-pulse">
+                  {unreadNotificationsCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           {/* Live digital clock */}
-          <div className="hidden sm:flex flex-col items-end pr-2 border-r border-zinc-200 dark:border-zinc-800">
+          <div className="hidden xl:flex flex-col items-end pr-2 border-r border-zinc-200 dark:border-zinc-800">
             <div className="text-xs font-black font-orbitron tracking-widest text-red-600 dark:text-red-400">
               {currentTime}
             </div>
@@ -184,16 +252,30 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
           </button>
 
           {/* Reset seed button */}
-          <button
-            onClick={resetToFactorySeed}
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
-            title="Reset DB to official demo seed"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span className="font-orbitron text-[10px]">RESET SEED</span>
-          </button>
+          {currentUser.role === 'admin' && (
+            <button
+              onClick={resetToFactorySeed}
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+              title="Reset DB to official demo seed"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="font-orbitron text-[10px]">RESET SEED</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Floating Notification Drawer/Popover */}
+      <NotificationCenter
+        isOpen={notificationPanelOpen}
+        onClose={() => setNotificationPanelOpen(false)}
+      />
+
+      {/* Role Switcher Modal */}
+      <RoleSwitcherModal
+        isOpen={roleModalOpen}
+        onClose={() => setRoleModalOpen(false)}
+      />
     </header>
   );
 };

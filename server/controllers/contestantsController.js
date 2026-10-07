@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { readDB, writeDB } from '../database/db.js';
+import { logActivity, createNotification } from '../services/realtime.js';
 
 // GET /api/contestants
 export const getContestants = (req, res) => {
@@ -51,7 +52,40 @@ export const createContestant = (req, res) => {
       timestamp: new Date().toISOString()
     });
 
+    // Also add to users list if not present
+    if (Array.isArray(db.users)) {
+      db.users.push({
+        id: `u-${newContestant.id}`,
+        username: newContestant.name.toLowerCase().replace(/\s+/g, ''),
+        name: newContestant.name,
+        role: 'contestant',
+        contestantId: newContestant.id,
+        avatar: newContestant.avatar
+      });
+    }
+
     writeDB(db);
+
+    // Real-time activity log and notification
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'CONTESTANT_CREATED',
+      description: `New contestant ${newContestant.name} inducted into Team ${newContestant.team}`,
+      target: newContestant.name,
+      targetId: newContestant.id
+    });
+
+    createNotification(db, {
+      recipient: 'all',
+      title: 'New Contestant Inducted',
+      message: `${newContestant.name} has joined the Big Boss House under Team ${newContestant.team}!`,
+      type: 'system',
+      relatedEntity: { type: 'contestant', id: newContestant.id }
+    });
 
     res.status(201).json({
       success: true,
@@ -83,6 +117,18 @@ export const updateContestant = (req, res) => {
     if (avatar) current.avatar = avatar;
 
     writeDB(db);
+
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'CONTESTANT_UPDATED',
+      description: `Updated profile details for ${current.name}`,
+      target: current.name,
+      targetId: current.id
+    });
 
     res.json({
       success: true,
@@ -124,7 +170,7 @@ export const updatePoints = (req, res) => {
 
     contestant.points += numAmount;
 
-    // Rule 7: Prevent NaN
+    // Prevent NaN
     if (Number.isNaN(contestant.points)) {
       contestant.points = 0;
     }
@@ -140,6 +186,28 @@ export const updatePoints = (req, res) => {
 
     db.pointLogs.unshift(logEntry);
     writeDB(db);
+
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    // Activity Log
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: numAmount > 0 ? 'POINTS_AWARDED' : 'POINTS_DEDUCTED',
+      description: `${numAmount > 0 ? `Awarded +${numAmount}` : `Deducted ${Math.abs(numAmount)}`} points for ${contestant.name}: "${trimmedReason}"`,
+      target: contestant.name,
+      targetId: contestant.id
+    });
+
+    // Targeted Notification for contestant
+    createNotification(db, {
+      recipient: contestant.id,
+      title: numAmount > 0 ? 'Points Awarded' : 'Demerit Penalty',
+      message: `${numAmount > 0 ? `+${numAmount}` : numAmount} points: "${trimmedReason}". Current Total: ${contestant.points}`,
+      type: 'points',
+      relatedEntity: { type: 'leaderboard', id: contestant.id }
+    });
 
     res.json({
       success: true,
@@ -207,6 +275,28 @@ export const evictContestant = (req, res) => {
 
     writeDB(db);
 
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    // Activity Log
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'EVICTION_EXECUTED',
+      description: `${contestant.name} evicted from Big Boss House (${evictionReason})`,
+      target: contestant.name,
+      targetId: contestant.id
+    });
+
+    // Broadcast Notification
+    createNotification(db, {
+      recipient: 'all',
+      title: 'Contestant Evicted',
+      message: `🚪 EVICTION: ${contestant.name} has left the Big Boss House!`,
+      type: 'eviction',
+      relatedEntity: { type: 'evictions', id: contestant.id }
+    });
+
     res.json({
       success: true,
       message: `${contestant.name} has been evicted from the House.`,
@@ -233,6 +323,26 @@ export const deleteContestant = (req, res) => {
 
     const removed = db.contestants.splice(index, 1)[0];
     writeDB(db);
+
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'CONTESTANT_DELETED',
+      description: `Contestant ${removed.name} removed from registry`,
+      target: removed.name,
+      targetId: removed.id
+    });
+
+    createNotification(db, {
+      recipient: 'all',
+      title: 'Contestant Removed',
+      message: `${removed.name} has been removed from the registry.`,
+      type: 'system',
+      relatedEntity: { type: 'contestant', id: removed.id }
+    });
 
     res.json({
       success: true,

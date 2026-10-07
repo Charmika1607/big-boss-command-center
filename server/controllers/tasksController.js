@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { readDB, writeDB } from '../database/db.js';
+import { logActivity, createNotification } from '../services/realtime.js';
 
 // GET /api/tasks
 export const getTasks = (req, res) => {
@@ -62,6 +63,39 @@ export const createTask = (req, res) => {
 
     writeDB(db);
 
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    // Activity log
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'TASK_CREATED',
+      description: `Commissioned "${newTask.title}" (${newTask.rewardPoints} pts reward)`,
+      target: newTask.title,
+      targetId: newTask.id
+    });
+
+    // Notify assigned contestants specifically
+    newTask.assignedContestantIds.forEach(cId => {
+      createNotification(db, {
+        recipient: cId,
+        title: 'New Task Assignment',
+        message: `You have been assigned to challenge: "${newTask.title}" (${newTask.rewardPoints} pts).`,
+        type: 'task',
+        relatedEntity: { type: 'task', id: newTask.id }
+      });
+    });
+
+    // Notify all housemates
+    createNotification(db, {
+      recipient: 'all',
+      title: 'New House Challenge',
+      message: `Big Boss announced "${newTask.title}" with ${newTask.rewardPoints} reward points!`,
+      type: 'task',
+      relatedEntity: { type: 'task', id: newTask.id }
+    });
+
     res.status(201).json({
       success: true,
       message: `Task "${newTask.title}" created successfully.`,
@@ -77,12 +111,38 @@ export const updateTask = (req, res) => {
   try {
     const { id } = req.params;
     const { status, title, description, assignedContestantIds, rewardPoints, deadline } = req.body;
+    const user = req.user;
 
     const db = readDB();
     const task = db.tasks.find(t => t.id === id);
 
     if (!task) {
       return res.status(404).json({ success: false, message: 'Task not found.' });
+    }
+
+    // Role-based authorization enforcement
+    if (user && user.role === 'contestant') {
+      // Contestant can ONLY transition task status for tasks assigned to them!
+      const isAssigned = (task.assignedContestantIds || []).includes(user.contestantId);
+      if (!isAssigned) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: You can only update tasks assigned to you.'
+        });
+      }
+
+      // Contestants cannot alter metadata (title, reward, assignees, deadline)
+      if (title || description || assignedContestantIds || rewardPoints || deadline) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: Contestants cannot alter challenge parameters.'
+        });
+      }
+    } else if (user && user.role === 'viewer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Viewers have read-only access.'
+      });
     }
 
     const previousStatus = task.status;
@@ -122,6 +182,15 @@ export const updateTask = (req, res) => {
               reason: `Task completed: ${task.title}`,
               timestamp: new Date().toISOString()
             });
+
+            // Notify each winner
+            createNotification(db, {
+              recipient: contestant.id,
+              title: 'Challenge Reward Earned',
+              message: `You earned +${task.rewardPoints} points for completing "${task.title}"! Total: ${contestant.points}`,
+              type: 'points',
+              relatedEntity: { type: 'leaderboard', id: contestant.id }
+            });
           }
         });
 
@@ -133,6 +202,34 @@ export const updateTask = (req, res) => {
           type: 'task',
           timestamp: new Date().toISOString(),
           pinned: false
+        });
+
+        // Activity log
+        logActivity(db, {
+          actor: user?.name || 'Assigned Housemate',
+          role: user?.role || 'contestant',
+          action: 'TASK_COMPLETED',
+          description: `Completed challenge "${task.title}". +${task.rewardPoints} points awarded to ${namesList}`,
+          target: task.title,
+          targetId: task.id
+        });
+
+        // House-wide notification
+        createNotification(db, {
+          recipient: 'all',
+          title: 'Challenge Completed',
+          message: `🏆 "${task.title}" completed by ${namesList} (+${task.rewardPoints} pts)!`,
+          type: 'task',
+          relatedEntity: { type: 'task', id: task.id }
+        });
+      } else if (status === 'In Progress') {
+        logActivity(db, {
+          actor: user?.name || 'Big Boss (Admin)',
+          role: user?.role || 'admin',
+          action: 'TASK_STARTED',
+          description: `Challenge "${task.title}" is now In Progress`,
+          target: task.title,
+          targetId: task.id
         });
       }
     }
@@ -164,6 +261,18 @@ export const deleteTask = (req, res) => {
 
     const removed = db.tasks.splice(index, 1)[0];
     writeDB(db);
+
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'TASK_DELETED',
+      description: `Task "${removed.title}" deleted from schedule`,
+      target: removed.title,
+      targetId: removed.id
+    });
 
     res.json({
       success: true,

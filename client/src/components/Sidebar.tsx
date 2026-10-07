@@ -11,7 +11,10 @@ import {
   Timer,
   Megaphone,
   UserX,
-  X
+  X,
+  Activity,
+  BarChart3,
+  ShieldCheck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,7 +29,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
     nominees,
     tasks,
     activeContestants,
-    evictedContestants
+    evictedContestants,
+    activities,
+    currentUser
   } = useCommandCenter();
 
   const pendingTasksCount = tasks.filter(t => t.status !== 'Completed').length;
@@ -50,6 +55,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       label: 'Live Leaderboard',
       icon: Trophy,
       badge: 'LIVE',
+      badgeColor: 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+    },
+    {
+      id: 'activity',
+      label: 'Activity Log',
+      icon: Activity,
+      badge: 'LIVE',
+      badgeColor: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics Hub',
+      icon: BarChart3,
+      badge: 'METRICS',
       badgeColor: 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
     },
     {
@@ -187,18 +206,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
           </div>
         </div>
 
-        {/* System Surveillance Footer */}
-        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/40">
-          <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-            <div>
-              <div className="text-[10px] font-black uppercase font-orbitron tracking-wider text-zinc-700 dark:text-zinc-300">
-                BIG BOSS AI CORE
-              </div>
-              <div className="text-[10px] text-zinc-400">
-                Surveillance Active 24/7
-              </div>
+        {/* Operator Role & Surveillance Status Footer */}
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/40 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span className="text-[10px] font-black uppercase font-orbitron text-zinc-700 dark:text-zinc-300">
+                ACTIVE OPERATOR
+              </span>
             </div>
+            <span className={`text-[9px] font-black uppercase font-orbitron px-1.5 py-0.5 rounded ${
+              currentUser.role === 'admin'
+                ? 'bg-red-600/15 text-red-600 dark:text-red-400 border border-red-500/30'
+                : currentUser.role === 'contestant'
+                ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                : 'bg-purple-600/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
+            }`}>
+              {currentUser.role.toUpperCase()}
+            </span>
+          </div>
+          <div className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+            {currentUser.name}
           </div>
         </div>
       </aside>

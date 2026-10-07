@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { readDB, writeDB } from '../database/db.js';
+import { logActivity, createNotification } from '../services/realtime.js';
 
 // GET /api/announcements
 export const getAnnouncements = (req, res) => {
@@ -35,6 +36,26 @@ export const createAnnouncement = (req, res) => {
     db.announcements.unshift(newAnnouncement);
     writeDB(db);
 
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'ANNOUNCEMENT_CREATED',
+      description: `Broadcasted transmission: "${newAnnouncement.message.slice(0, 80)}${newAnnouncement.message.length > 80 ? '...' : ''}"`,
+      target: 'House Broadcast',
+      targetId: newAnnouncement.id
+    });
+
+    createNotification(db, {
+      recipient: 'all',
+      title: 'Big Boss Transmission',
+      message: newAnnouncement.message,
+      type: 'announcement',
+      relatedEntity: { type: 'announcements', id: newAnnouncement.id }
+    });
+
     res.status(201).json({
       success: true,
       message: 'Announcement broadcasted to the House.',
@@ -58,6 +79,18 @@ export const deleteAnnouncement = (req, res) => {
 
     const removed = db.announcements.splice(index, 1)[0];
     writeDB(db);
+
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'ANNOUNCEMENT_DELETED',
+      description: `Deleted transmission from house boards`,
+      target: 'House Broadcast',
+      targetId: removed.id
+    });
 
     res.json({
       success: true,

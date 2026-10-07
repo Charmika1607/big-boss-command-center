@@ -8,12 +8,13 @@ import {
   AlertTriangle,
   Plus,
   Minus,
-  Sparkles
+  Sparkles,
+  UserCheck
 } from 'lucide-react';
 import { Contestant } from '../types';
 
 export const Leaderboard: React.FC = () => {
-  const { activeContestants, openModal, pointLogs } = useCommandCenter();
+  const { activeContestants, openModal, pointLogs, currentUser } = useCommandCenter();
 
   // Sort active contestants descending by points
   const sortedContestants = [...activeContestants].sort((a, b) => b.points - a.points);
@@ -79,25 +80,28 @@ export const Leaderboard: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-black tracking-wide uppercase font-orbitron text-zinc-900 dark:text-white">
-                LIVE HOUSE LEADERBOARD
+                OFFICIAL HOUSE LEADERBOARD
               </h2>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold font-orbitron border border-emerald-500/30">
-                ACTIVE STANDINGS
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-600/15 border border-red-500/40 text-red-600 dark:text-red-400 text-[10px] font-black uppercase font-orbitron">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                LIVE
               </span>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Rankings dynamically recalculate as points are awarded or deducted.
+              Current merit standings, survival tiers, and disciplinary point tallies across all teams.
             </p>
           </div>
         </div>
 
-        <button
-          onClick={() => openModal('adjust-points')}
-          className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 transition-all hover:scale-[1.02]"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Audit Points
-        </button>
+        {currentUser.role === 'admin' && (
+          <button
+            onClick={() => openModal('adjust-points')}
+            className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 transition-all hover:scale-[1.02]"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Audit Points
+          </button>
+        )}
       </div>
 
       {/* Podium Top 3 Cards for Desktop */}
@@ -175,19 +179,22 @@ export const Leaderboard: React.FC = () => {
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-black uppercase tracking-wider font-orbitron text-zinc-400 dark:text-zinc-500">
-              <th className="py-3 px-3">Rank</th>
+            <tr className="border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-black uppercase tracking-wider font-orbitron text-zinc-400">
+              <th className="py-3 px-3 w-16">Rank</th>
               <th className="py-3 px-3">Contestant</th>
               <th className="py-3 px-3">Team</th>
               <th className="py-3 px-3">Status</th>
               <th className="py-3 px-3 text-right">Points</th>
-              <th className="py-3 px-3 text-right">Quick Audit</th>
+              {currentUser.role === 'admin' && (
+                <th className="py-3 px-3 text-right">Quick Audit</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {sortedContestants.map((c, index) => {
               const rank = index + 1;
               const recentDelta = getRecentChange(c.id);
+              const isCurrentUser = currentUser.role === 'contestant' && currentUser.contestantId === c.id;
 
               return (
                 <motion.tr
@@ -197,7 +204,9 @@ export const Leaderboard: React.FC = () => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                   className={`hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors ${
-                    rank === 1
+                    isCurrentUser
+                      ? 'bg-blue-500/10 ring-2 ring-blue-500/30'
+                      : rank === 1
                       ? 'bg-amber-500/5 font-semibold'
                       : rank === 2
                       ? 'bg-slate-500/5'
@@ -222,18 +231,23 @@ export const Leaderboard: React.FC = () => {
                         />
                         {c.isCaptain && (
                           <div className="absolute -top-1.5 -right-1 bg-amber-500 text-black p-0.5 rounded-full shadow" title="House Captain">
-                            <Crown className="w-3 h-3 fill-black" />
+                            <Crown className="w-3.5 h-3.5 fill-black" />
                           </div>
                         )}
                         {c.isImmune && (
                           <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full shadow" title="Immune">
-                            <Shield className="w-3 h-3 fill-white" />
+                            <Shield className="w-3.5 h-3.5 fill-white" />
                           </div>
                         )}
                       </div>
                       <div>
                         <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                           {c.name}
+                          {isCurrentUser && (
+                            <span className="text-[10px] font-black font-orbitron px-1.5 py-0.5 rounded bg-blue-500 text-white">
+                              YOU
+                            </span>
+                          )}
                           {c.isCaptain && (
                             <span className="text-[10px] font-black font-orbitron text-amber-500">
                               (CAPTAIN)
@@ -300,25 +314,27 @@ export const Leaderboard: React.FC = () => {
                     </div>
                   </td>
 
-                  {/* Action +/- */}
-                  <td className="py-3.5 px-3 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => openModal('adjust-points', { contestantId: c.id, direction: 'add' })}
-                        className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors"
-                        title="Award Points"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => openModal('adjust-points', { contestantId: c.id, direction: 'deduct' })}
-                        className="p-1.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
-                        title="Deduct Points"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
+                  {/* Action +/- (Admin only) */}
+                  {currentUser.role === 'admin' && (
+                    <td className="py-3.5 px-3 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openModal('adjust-points', { contestantId: c.id, direction: 'add' })}
+                          className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors"
+                          title="Award Points"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openModal('adjust-points', { contestantId: c.id, direction: 'deduct' })}
+                          className="p-1.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                          title="Deduct Points"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </motion.tr>
               );
             })}

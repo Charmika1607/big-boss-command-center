@@ -101,3 +101,129 @@ export interface ToastMessage {
   type: 'success' | 'error' | 'warning' | 'info';
   timestamp: number;
 }
+
+// ---------------- NEW FEATURE TYPES ----------------
+
+// 1. Roles & RBAC
+export type UserRole = 'admin' | 'contestant' | 'viewer';
+
+export interface User {
+  id: string;
+  username: string;
+  name: string;
+  role: UserRole;
+  contestantId?: string;
+  avatar?: string;
+}
+
+// 2. Real-Time Activity Log
+export interface ActivityLog {
+  id: string;
+  timestamp: string;
+  actor: string;
+  role: UserRole | 'system';
+  action: string;
+  description: string;
+  target: string;
+  targetId?: string;
+}
+
+// 3. Event Notifications
+export interface HouseNotification {
+  id: string;
+  recipient: string;
+  title: string;
+  message: string;
+  type: 'task' | 'nomination' | 'immunity' | 'captain' | 'points' | 'announcement' | 'eviction' | 'timer' | 'system';
+  timestamp: string;
+  read: boolean;
+  relatedEntity?: {
+    type: string;
+    id?: string;
+  };
+}
+
+// 4. Performance Analytics
+export interface OverviewAnalytics {
+  summary: {
+    totalContestants: number;
+    activeContestants: number;
+    evictedContestants: number;
+    totalPoints: number;
+    averagePoints: number;
+    pointsGainedTotal: number;
+    pointsDeductedTotal: number;
+    netPoints: number;
+  };
+  taskAnalytics: {
+    totalTasks: number;
+    completedTasks: number;
+    inProgressTasks: number;
+    pendingTasks: number;
+    taskCompletionRate: number;
+    totalRewardsAwarded: number;
+  };
+  teamPerformance: {
+    team: Team;
+    activeCount: number;
+    totalPoints: number;
+    averagePoints: number;
+    topScorer: { name: string; points: number } | null;
+  }[];
+  topPerformers: {
+    rank: number;
+    id: string;
+    name: string;
+    team: Team;
+    avatar: string;
+    points: number;
+    status: ContestantStatus;
+    isCaptain: boolean;
+    isImmune: boolean;
+  }[];
+  nominationFrequencies: {
+    id: string;
+    name: string;
+    team: Team;
+    count: number;
+  }[];
+  pointsTimeline: {
+    timestamp: string;
+    contestantName: string;
+    amount: number;
+    reason: string;
+  }[];
+}
+
+export interface ContestantAnalytics {
+  contestant: Contestant;
+  currentRank: number | string;
+  totalPoints: number;
+  pointsGained: number;
+  pointsLost: number;
+  netPoints: number;
+  tasksAssigned: number;
+  tasksCompleted: number;
+  tasksInProgress: number;
+  tasksPending: number;
+  taskCompletionRate: number;
+  nominationCount: number;
+  immunityCount: number;
+  captaincyCount: number;
+  performanceScore: number;
+  performanceTier: string;
+  pointsTrend: {
+    timestamp: string;
+    amount: number;
+    cumulative: number;
+    reason: string;
+  }[];
+  recentLogs: PointLog[];
+  assignedTasks: {
+    id: string;
+    title: string;
+    rewardPoints: number;
+    status: TaskStatus;
+    deadline: string;
+  }[];
+}

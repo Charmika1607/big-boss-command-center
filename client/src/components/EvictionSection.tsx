@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export const EvictionSection: React.FC = () => {
-  const { evictions, openModal } = useCommandCenter();
+  const { evictions, openModal, currentUser } = useCommandCenter();
 
   return (
     <div className="w-full space-y-6">
@@ -32,17 +32,19 @@ export const EvictionSection: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={() => openModal('evict')}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 transition-all hover:scale-[1.02] shrink-0"
-          >
-            <DoorOpen className="w-4 h-4" />
-            Execute Eviction Protocol
-          </button>
+          {currentUser.role === 'admin' && (
+            <button
+              onClick={() => openModal('evict')}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-orbitron uppercase bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 transition-all hover:scale-[1.02] shrink-0"
+            >
+              <DoorOpen className="w-4 h-4" />
+              Execute Eviction Protocol
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Evicted Contestants Cards / Table */}
+      {/* Evicted Contestants Cards */}
       {evictions.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {evictions.map((record) => (
@@ -59,58 +61,45 @@ export const EvictionSection: React.FC = () => {
                     <h3 className="font-bold text-base text-zinc-900 dark:text-white">
                       {record.name}
                     </h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-                        {record.team} Team
-                      </span>
-                      <span className="text-[10px] font-black uppercase font-orbitron text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20">
-                        EVICTED
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700 mt-1 inline-block">
+                      Former Team {record.team}
+                    </span>
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-lg font-black font-orbitron text-zinc-700 dark:text-zinc-300">
-                      {record.finalPoints}
-                    </div>
-                    <div className="text-[9px] uppercase font-bold text-zinc-400 font-orbitron">
-                      FINAL POINTS
-                    </div>
-                  </div>
+                  <span className="text-[10px] font-black uppercase font-orbitron text-red-600 dark:text-red-400 bg-red-600/10 px-2.5 py-1 rounded-lg border border-red-500/20">
+                    PERMANENTLY EVICTED
+                  </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-xs text-zinc-600 dark:text-zinc-400 mb-3 border border-zinc-200 dark:border-zinc-800">
-                  <span className="font-bold text-zinc-800 dark:text-zinc-200">
-                    Eviction Grounds:
-                  </span>{' '}
-                  {record.reason || 'Eliminated by Big Boss decree.'}
+                <div className="my-3 p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs">
+                  <span className="font-orbitron font-bold text-zinc-400 text-[10px] uppercase block mb-1">
+                    OFFICIAL EVICTION RECORD:
+                  </span>
+                  <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                    "{record.reason || 'Evicted by Big Boss executive mandate.'}"
+                  </p>
                 </div>
-              </div>
 
-              <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800/80 text-[11px] text-zinc-400 flex items-center justify-between font-rajdhani">
-                <span className="flex items-center gap-1">
+                <div className="flex items-center justify-between text-xs py-2 border-t border-zinc-200 dark:border-zinc-800 mb-2">
+                  <span className="text-zinc-400 font-rajdhani">Final Standing Score:</span>
+                  <span className="font-black font-orbitron text-amber-500">
+                    {record.finalPoints} PTS
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-zinc-400 font-rajdhani flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-red-500" />
-                  {new Date(record.evictedAt).toLocaleDateString([], {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}{' '}
-                  at {new Date(record.evictedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <span className="font-bold text-zinc-500">Departed House</span>
+                  Departure: {new Date(record.evictedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="py-16 text-center rounded-2xl bg-white/60 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 text-zinc-400 flex flex-col items-center justify-center">
-          <DoorOpen className="w-12 h-12 text-zinc-400 mb-3 opacity-60" />
-          <h3 className="font-orbitron font-bold text-base text-zinc-200">
-            NO CONTESTANTS EVICTED YET
-          </h3>
-          <p className="text-xs text-zinc-400 mt-1 max-w-sm">
-            All original housemates remain active inside the Big Boss House compound.
-          </p>
+        <div className="py-16 text-center text-zinc-400 flex flex-col items-center justify-center rounded-2xl bg-zinc-900/30 border border-zinc-800">
+          <DoorOpen className="w-12 h-12 mb-3 opacity-30 text-red-500" />
+          <h3 className="font-orbitron font-bold text-sm text-zinc-300">NO EVICTIONS REGISTERED</h3>
+          <p className="text-xs text-zinc-500 mt-1">All initial contestants remain in competition.</p>
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { readDB, writeDB } from '../database/db.js';
+import { logActivity, createNotification } from '../services/realtime.js';
 
 // GET /api/captain
 export const getCaptain = (req, res) => {
@@ -21,6 +22,8 @@ export const setCaptain = (req, res) => {
   try {
     const { contestantId, action = 'assign' } = req.body;
     const db = readDB();
+    const actorName = req.user?.name || 'Big Boss (Admin)';
+    const actorRole = req.user?.role || 'admin';
 
     // Handling removal
     if (action === 'remove' || (!contestantId && action === 'assign')) {
@@ -38,6 +41,24 @@ export const setCaptain = (req, res) => {
         });
 
         writeDB(db);
+
+        logActivity(db, {
+          actor: actorName,
+          role: actorRole,
+          action: 'CAPTAIN_REMOVED',
+          description: `${currentCaptain.name} relieved of House Captaincy duties`,
+          target: currentCaptain.name,
+          targetId: currentCaptain.id
+        });
+
+        createNotification(db, {
+          recipient: 'all',
+          title: 'Captaincy Relinquished',
+          message: `${currentCaptain.name} is no longer House Captain.`,
+          type: 'captain',
+          relatedEntity: { type: 'captain', id: currentCaptain.id }
+        });
+
         return res.json({
           success: true,
           message: `${currentCaptain.name} is no longer House Captain.`,
@@ -82,6 +103,23 @@ export const setCaptain = (req, res) => {
     });
 
     writeDB(db);
+
+    logActivity(db, {
+      actor: actorName,
+      role: actorRole,
+      action: 'CAPTAIN_ASSIGNED',
+      description: `Appointed ${target.name} as official House Captain`,
+      target: target.name,
+      targetId: target.id
+    });
+
+    createNotification(db, {
+      recipient: 'all',
+      title: 'New House Captain Proclaimed',
+      message: `👑 ${target.name} is now the House Captain. Full compliance is required.`,
+      type: 'captain',
+      relatedEntity: { type: 'captain', id: target.id }
+    });
 
     res.json({
       success: true,

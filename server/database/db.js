@@ -291,6 +291,266 @@ export const getInitialData = () => ({
       evictedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
       reason: 'Week 2 Public Eviction vote with lowest audience index.'
     }
+  ],
+  activities: [
+    {
+      id: 'act-1',
+      timestamp: new Date(Date.now() - 3600000 * 1).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'ANNOUNCEMENT_CREATED',
+      description: 'Broadcasted luxury budget cipher task alert to House',
+      target: 'House Broadcast',
+      targetId: 'ann-4'
+    },
+    {
+      id: 'act-2',
+      timestamp: new Date(Date.now() - 3600000 * 3).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'POINTS_AWARDED',
+      description: 'Awarded +15 captaincy bonus to Aarav Sharma for maintaining house discipline',
+      target: 'Aarav Sharma',
+      targetId: 'c-aarav'
+    },
+    {
+      id: 'act-3',
+      timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'TASK_CREATED',
+      description: 'Commissioned "Surveillance Spy Challenge" for Kabir Verma & Ishita Nair',
+      target: 'Surveillance Spy Challenge',
+      targetId: 'task-3'
+    },
+    {
+      id: 'act-4',
+      timestamp: new Date(Date.now() - 3600000 * 8).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'POINTS_DEDUCTED',
+      description: 'Deducted 5 points from Diya Patel for refusing morning siren lineup',
+      target: 'Diya Patel',
+      targetId: 'c-diya'
+    },
+    {
+      id: 'act-5',
+      timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'NOMINATION_CREATED',
+      description: 'Placed Diya Patel, Rohan Malhotra & Vihaan Joshi in the Danger Zone',
+      target: 'Danger Zone Nominees',
+      targetId: 'c-diya'
+    },
+    {
+      id: 'act-6',
+      timestamp: new Date(Date.now() - 3600000 * 18).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'POINTS_DEDUCTED',
+      description: 'Deducted 10 points from Rohan Malhotra for forbidden dialect violation',
+      target: 'Rohan Malhotra',
+      targetId: 'c-rohan'
+    },
+    {
+      id: 'act-7',
+      timestamp: new Date(Date.now() - 86400000 * 1).toISOString(),
+      actor: 'Meera Rajput',
+      role: 'contestant',
+      action: 'TASK_COMPLETED',
+      description: 'Completed "The Iron Vault" endurance challenge, securing +30 points & immunity',
+      target: 'The Iron Vault',
+      targetId: 'task-2'
+    },
+    {
+      id: 'act-8',
+      timestamp: new Date(Date.now() - 86400000 * 1).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'IMMUNITY_GRANTED',
+      description: 'Granted Iron Vault Immunity Shield to Meera Rajput for Week 3',
+      target: 'Meera Rajput',
+      targetId: 'c-meera'
+    },
+    {
+      id: 'act-9',
+      timestamp: new Date(Date.now() - 86400000 * 2).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'CAPTAIN_ASSIGNED',
+      description: 'Appointed Aarav Sharma as official House Captain',
+      target: 'Aarav Sharma',
+      targetId: 'c-aarav'
+    },
+    {
+      id: 'act-10',
+      timestamp: new Date(Date.now() - 86400000 * 2).toISOString(),
+      actor: 'Big Boss (Admin)',
+      role: 'admin',
+      action: 'EVICTION_EXECUTED',
+      description: 'Evicted Kavya Rao following Week 2 Public Voting tally',
+      target: 'Kavya Rao',
+      targetId: 'c-kavya'
+    }
+  ],
+  notifications: [
+    {
+      id: 'notif-1',
+      recipient: 'all',
+      title: 'Danger Zone Alert',
+      message: 'Diya Patel, Rohan Malhotra and Vihaan Joshi are nominated for elimination.',
+      type: 'nomination',
+      timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
+      read: false,
+      relatedEntity: { type: 'dangerzone', id: 'c-diya' }
+    },
+    {
+      id: 'notif-2',
+      recipient: 'c-aarav',
+      title: 'Captaincy Bonus Awarded',
+      message: 'You have been awarded +15 points for maintaining supreme house order.',
+      type: 'points',
+      timestamp: new Date(Date.now() - 3600000 * 3).toISOString(),
+      read: false,
+      relatedEntity: { type: 'leaderboard', id: 'c-aarav' }
+    },
+    {
+      id: 'notif-3',
+      recipient: 'c-kabir',
+      title: 'New House Task Assigned',
+      message: 'Big Boss assigned you to "Surveillance Spy Challenge" (Reward: 20 pts).',
+      type: 'task',
+      timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
+      read: false,
+      relatedEntity: { type: 'task', id: 'task-3' }
+    },
+    {
+      id: 'notif-4',
+      recipient: 'c-meera',
+      title: 'Immunity Shield Confirmed',
+      message: 'You are protected by the Iron Vault Immunity Shield for Week 3.',
+      type: 'immunity',
+      timestamp: new Date(Date.now() - 86400000 * 1).toISOString(),
+      read: true,
+      relatedEntity: { type: 'immunity', id: 'c-meera' }
+    },
+    {
+      id: 'notif-5',
+      recipient: 'all',
+      title: 'New House Captain Proclaimed',
+      message: 'Aarav Sharma has taken oath as House Captain. All orders are mandatory.',
+      type: 'captain',
+      timestamp: new Date(Date.now() - 86400000 * 2).toISOString(),
+      read: true,
+      relatedEntity: { type: 'captain', id: 'c-aarav' }
+    },
+    {
+      id: 'notif-6',
+      recipient: 'all',
+      title: 'Eviction Notice',
+      message: 'Kavya Rao has left the Big Boss House.',
+      type: 'eviction',
+      timestamp: new Date(Date.now() - 86400000 * 2).toISOString(),
+      read: true,
+      relatedEntity: { type: 'evictions', id: 'c-kavya' }
+    }
+  ],
+  users: [
+    {
+      id: 'u-admin',
+      username: 'bigboss',
+      name: 'Big Boss (Admin)',
+      role: 'admin',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-aarav',
+      username: 'aarav',
+      name: 'Aarav Sharma',
+      role: 'contestant',
+      contestantId: 'c-aarav',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-meera',
+      username: 'meera',
+      name: 'Meera Rajput',
+      role: 'contestant',
+      contestantId: 'c-meera',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-diya',
+      username: 'diya',
+      name: 'Diya Patel',
+      role: 'contestant',
+      contestantId: 'c-diya',
+      avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-ananya',
+      username: 'ananya',
+      name: 'Ananya Roy',
+      role: 'contestant',
+      contestantId: 'c-ananya',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-siddharth',
+      username: 'siddharth',
+      name: 'Siddharth Sen',
+      role: 'contestant',
+      contestantId: 'c-siddharth',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-kabir',
+      username: 'kabir',
+      name: 'Kabir Verma',
+      role: 'contestant',
+      contestantId: 'c-kabir',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-ishita',
+      username: 'ishita',
+      name: 'Ishita Nair',
+      role: 'contestant',
+      contestantId: 'c-ishita',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-arjun',
+      username: 'arjun',
+      name: 'Arjun Singhal',
+      role: 'contestant',
+      contestantId: 'c-arjun',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-rohan',
+      username: 'rohan',
+      name: 'Rohan Malhotra',
+      role: 'contestant',
+      contestantId: 'c-rohan',
+      avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-c-vihaan',
+      username: 'vihaan',
+      name: 'Vihaan Joshi',
+      role: 'contestant',
+      contestantId: 'c-vihaan',
+      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'u-viewer',
+      username: 'viewer',
+      name: 'Public Spectator',
+      role: 'viewer',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80'
+    }
   ]
 });
 
@@ -303,6 +563,28 @@ export const readDB = () => {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, 'utf-8');
       cache = JSON.parse(data);
+
+      // Verify and populate newly introduced collections if reading an older db.json
+      const initial = getInitialData();
+      let modified = false;
+
+      if (!Array.isArray(cache.activities)) {
+        cache.activities = initial.activities;
+        modified = true;
+      }
+      if (!Array.isArray(cache.notifications)) {
+        cache.notifications = initial.notifications;
+        modified = true;
+      }
+      if (!Array.isArray(cache.users)) {
+        cache.users = initial.users;
+        modified = true;
+      }
+
+      if (modified) {
+        writeDB(cache);
+      }
+
       return cache;
     }
   } catch (err) {

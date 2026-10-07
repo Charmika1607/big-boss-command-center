@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export const DangerZone: React.FC = () => {
-  const { nominees, removeNomination, openModal } = useCommandCenter();
+  const { nominees, removeNomination, openModal, currentUser } = useCommandCenter();
 
   return (
     <div className="w-full rounded-3xl border-2 border-red-600/60 bg-gradient-to-b from-red-950/40 via-red-900/10 to-zinc-950/60 p-5 sm:p-7 backdrop-blur-xl relative overflow-hidden shadow-2xl shadow-red-900/30">
@@ -40,13 +40,15 @@ export const DangerZone: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => openModal('nominate')}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold font-orbitron uppercase bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all hover:scale-[1.02] shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          Nominate Housemate
-        </button>
+        {currentUser.role === 'admin' && (
+          <button
+            onClick={() => openModal('nominate')}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold font-orbitron uppercase bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all hover:scale-[1.02] shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Nominate Housemate
+          </button>
+        )}
       </div>
 
       {/* Nominees List */}
@@ -113,37 +115,41 @@ export const DangerZone: React.FC = () => {
                 </span>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-2 pt-1">
-                {/* Revoke Nomination button */}
-                <button
-                  onClick={() => removeNomination(nominee.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 transition-colors"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  Pardon / Revoke
-                </button>
+              {/* Action buttons (Admin only) */}
+              {currentUser.role === 'admin' ? (
+                <div className="flex items-center gap-2 pt-1">
+                  {/* Revoke Nomination button */}
+                  <button
+                    onClick={() => removeNomination(nominee.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Pardon / Revoke
+                  </button>
 
-                {/* Evict from Danger Zone */}
-                <button
-                  onClick={() => openModal('evict', { contestantId: nominee.id, contestantName: nominee.name })}
-                  className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-colors shadow-md"
-                >
-                  <UserX className="w-3.5 h-3.5" />
-                  Evict
-                </button>
-              </div>
+                  {/* Evict from Danger Zone */}
+                  <button
+                    onClick={() => openModal('evict', { contestantId: nominee.id, contestantName: nominee.name })}
+                    className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-colors shadow-md"
+                  >
+                    <UserX className="w-3.5 h-3.5" />
+                    Evict
+                  </button>
+                </div>
+              ) : (
+                <div className="pt-2 text-center text-[11px] text-zinc-400 font-rajdhani">
+                  Contestant under active eviction vote tally
+                </div>
+              )}
             </div>
           ))}
         </div>
       ) : (
         <div className="py-12 px-4 text-center rounded-2xl bg-zinc-900/30 border border-zinc-800 text-zinc-400 flex flex-col items-center justify-center">
-          <Shield className="w-12 h-12 text-emerald-500 mb-3 opacity-80" />
-          <h3 className="font-orbitron font-bold text-base text-zinc-200">
-            DANGER ZONE CLEAR
-          </h3>
+          <Shield className="w-10 h-10 text-emerald-500 mb-2 opacity-80" />
+          <h3 className="font-bold font-orbitron text-white text-sm">DANGER ZONE IS CLEAR</h3>
           <p className="text-xs text-zinc-400 mt-1 max-w-sm">
-            No contestants currently in the Danger Zone. All active housemates are currently safe from eviction.
+            No contestants are currently placed on the elimination chopping block.
           </p>
         </div>
       )}
